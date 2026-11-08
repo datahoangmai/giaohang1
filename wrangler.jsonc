@@ -1,6 +1,6 @@
 {
   // Web app (file tĩnh sau khi build). "name" phải TRÙNG tên dự án Workers trên Cloudflare.
-  "name": "giaohang1",
+  "name": "giaohang",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
