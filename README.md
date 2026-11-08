@@ -18,7 +18,10 @@ Khóa Odoo / service_role / geocode chỉ nằm trong Worker, client không bao 
 
 ### 1. Supabase
 1. Tạo project. **Authentication → tắt Sign-ups.**
-2. SQL Editor: chạy `supabase/migrations/20261106_01_roles.sql` (riêng một lần), sau đó `20261106_02_phase1_rls_and_columns.sql`.
+2. SQL Editor, chạy lần lượt (mỗi file một lần chạy riêng):
+   - `20261106_00_base_schema.sql` — tạo bảng nền (chỉ cần khi Supabase còn trống; project đã có bảng thì bỏ qua). File này tạo sẵn 1 chi nhánh `HQ`: **sửa tọa độ và địa chỉ kho thật** bằng câu `update public.branches ...` ghi ở cuối file.
+   - `20261106_01_roles.sql`
+   - `20261106_02_phase1_rls_and_columns.sql`
 3. Tạo admin đầu tiên: Authentication → Add user (email + mật khẩu), rồi chạy SQL:
    `update public.profiles set role='admin', is_active=true where id='<uuid user>';`
    (nếu chưa có dòng profiles thì insert với cùng id).
