@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppUser } from '../../types/auth';
+import { missingConfig } from '../../services/api/ApiClient';
 import { AuthService } from '../../services/auth/AuthService';
 import {
   Lock,
@@ -40,7 +41,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess }
       return;
     }
     if (!isLive) {
-      setError('Ứng dụng chưa được cấu hình kết nối máy chủ (VITE_WORKER_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY). Liên hệ quản trị.');
+      setError(`Bản build này đang THIẾU biến: ${missingConfig.join(', ')}. Hãy đặt biến ở Cloudflare → Settings → Builds → Variables rồi build lại.`);
       return;
     }
     if (!password) {
