@@ -6,6 +6,13 @@ export const WORKER_URL: string = String(env.VITE_WORKER_URL || env.VITE_CLOUDFL
 export const SUPABASE_URL: string = String(env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 export const SUPABASE_ANON_KEY: string = String(env.VITE_SUPABASE_ANON_KEY || '');
 
+/** Danh sách biến VITE_* đang thiếu (để báo lỗi rõ ràng) */
+export const missingConfig: string[] = [
+  ...(WORKER_URL ? [] : ['VITE_WORKER_URL']),
+  ...(SUPABASE_URL ? [] : ['VITE_SUPABASE_URL']),
+  ...(SUPABASE_ANON_KEY ? [] : ['VITE_SUPABASE_ANON_KEY']),
+];
+
 export const isLiveConfigured = Boolean(WORKER_URL && SUPABASE_URL && SUPABASE_ANON_KEY);
 
 const SESSION_KEY = 'hachihi_session_v4';
