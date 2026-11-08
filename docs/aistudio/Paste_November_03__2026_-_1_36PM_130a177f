@@ -1,0 +1,1421 @@
+Thiết kế WebApp điều phối giao hàng – mô hình Grab Delivery 0 đồng
+Tôi đề xuất xây dựng một hệ thống riêng, có thể đặt tên Hachihi Delivery, hoạt động tương tự Grab dành cho đội giao hàng nội bộ hoặc doanh nghiệp có nhiều nhân viên giao nhận.
+
+Điểm quan trọng là hệ thống không chỉ quản lý đơn hàng mà phải có cả điều phối nhiều đơn – tối ưu tuyến đường – theo dõi nhân viên – xác nhận giao nhận bằng hình ảnh, ghi chú và GPS – dashboard quản trị.
+
+Mục tiêu là chạy trên điện thoại, máy tính, không cần mua VPS, không trả phí bản quyền, ưu tiên mã nguồn mở và các dịch vụ miễn phí.
+1. Tổng quan hệ thống
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+12
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hệ thống có 4 phân hệ chính:
+1. Dashboard quản trị
+
+Xem toàn bộ đơn hàng, nhân viên, xe, trạng thái giao hàng và bản đồ trực tiếp.
+
+
+
+2. Điều phối giao hàng
+
+Chia đơn cho từng tài xế, gom nhiều điểm giao, sắp xếp thứ tự và tối ưu lộ trình.
+
+
+
+3. Ứng dụng nhân viên giao hàng
+
+Nhận chuyến, bắt đầu giao, xác nhận từng điểm, chụp ảnh, ghi chú và lấy GPS.
+
+
+
+4. Báo cáo và lịch sử
+
+Theo dõi hiệu suất nhân viên, thời gian giao, số đơn thành công, thất bại và lịch sử lộ trình.
+
+
+
+2. Quy trình giao hàng thực tế
+Thiết kế theo nguyên tắc: nhân viên đến bước nào thì bấm xác nhận bước đó. Không cần nhập liệu phức tạp.
+
+
+
+
+
+
+
+dribbble.com
+
+
+Bước	Nhân viên thao tác	Hệ thống ghi nhận
+1	Nhận đơn	Người nhận, địa chỉ, thời gian
+2	Bấm nhận chuyến	Tài xế, thời gian nhận
+3	Bấm bắt đầu giao	GPS, giờ xuất phát
+4	Bấm đang đến điểm giao	GPS, ETA
+5	Bấm đã đến	Giờ đến, vị trí GPS
+6	Chụp ảnh hàng hóa	Hình ảnh, thời gian
+7	Ghi chú nếu cần	Nội dung, vị trí
+8	Bấm giao thành công	GPS, giờ hoàn tất
+9	Chuyển điểm tiếp theo	Tự động cập nhật lộ trình
+
+Nếu giao thất bại, phải có lý do: khách không nghe máy, sai địa chỉ, khách hẹn lại, không nhận hàng...
+
+Đặc biệt: Mỗi điểm giao có trạng thái độc lập. Không được đánh dấu hoàn thành cả chuyến chỉ vì đã giao xong một điểm.
+3. Điều phối nhiều đơn và nhiều điểm giao
+Đây là chức năng quan trọng nhất của ứng dụng.
+
+Ví dụ doanh nghiệp có 2 nhân viên:
+Chuyến giao hàng 01
+5 điểm giao
+
+Nhân viên A – Xe máy
+
+5 đơn
+
+1. Điểm 1 – Quận 1
+   Đã giao
+2. Điểm 2 – Quận 3
+   Đã giao
+3. Điểm 3 – Bình Thạnh
+   Đang đến
+4. Điểm 4 – Phú Nhuận
+   Chưa giao
+5. Điểm 5 – Gò Vấp
+   Chưa giao
+
+Chuyến giao hàng 02
+3 điểm giao
+
+Nhân viên B – Ô tô
+
+3 đơn
+
+1. Điểm 1 – Tân Bình
+   Đã giao
+2. Điểm 2 – Tân Phú
+   Chưa giao
+3. Điểm 3 – Bình Tân
+   Chưa giao
+
+Các tính năng điều phối cần có
+- Chọn nhiều đơn hàng và giao cho một nhân viên.
+- Kéo thả để thay đổi thứ tự điểm giao.
+- Tự động sắp xếp thứ tự giao theo khoảng cách và thời gian.
+- Phân biệt xe máy, ô tô và phương tiện khác.
+- Xem tổng số km, thời gian dự kiến, thời gian giao từng điểm.
+- Thay đổi tài xế hoặc chuyển đơn giữa các chuyến.
+- Khi một điểm giao thất bại, có thể đưa điểm đó sang chuyến khác.
+- Cho phép điều phối viên theo dõi tiến độ toàn bộ chuyến.
+4. Bản đồ điều phối trực quan
+
+
+
+
+
+
+
+saasworthy.com
+
+
+Màn hình bản đồ phải có các thành phần:
+Ký hiệu	Ý nghĩa
+🟢	Đã giao thành công
+🔵	Điểm đang chuẩn bị giao
+🟠	Điểm đang đến
+🔴	Giao thất bại
+⚪	Chưa giao
+🏍️	Nhân viên xe máy
+🚗	Nhân viên ô tô
+
+Khi chọn một nhân viên, bản đồ chỉ hiển thị tuyến đường của người đó.
+
+Khi chọn tất cả, hiển thị nhiều tuyến đường với màu khác nhau.
+
+Các chức năng bản đồ:
+1. Đánh số thứ tự các điểm giao.
+2. Vẽ đường đi thực tế theo mạng lưới đường phố, không chỉ nối các điểm bằng đường thẳng.
+3. Hiển thị vị trí GPS hiện tại của nhân viên.
+4. Hiển thị điểm đã giao và điểm chưa giao.
+5. Hiển thị khoảng cách và thời gian dự kiến đến từng điểm.
+6. Khi giao xong một điểm, tự động cập nhật tiến độ.
+7. Có thể mở Google Maps để dẫn đường thực tế.
+Ví dụ giao diện bản đồ
+
+
+
+
+
+
+
+here.com
+
+
+Tôi muốn thiết kế thêm một màn hình riêng: Chi tiết hành trình nhân viên.
+
+Khi bấm vào nhân viên A, quản lý xem được:
+- 08:00 – Nhận 5 đơn.
+- 08:10 – Bắt đầu chuyến.
+- 08:25 – Đến điểm 1.
+- 08:30 – Giao thành công, có ảnh.
+- 08:45 – Đến điểm 2.
+- 09:00 – Giao thành công.
+- 09:15 – Đến điểm 3.
+- 09:20 – Đang giao.
+Có thể xem lại bản đồ hành trình, ảnh, ghi chú, vị trí và thời gian của từng lần thao tác.
+5. Chụp ảnh, ghi chú và định vị GPS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+13
+
+
+
+
+
+
+
+
+
+
+Mỗi lần thao tác có thể ghi nhận:
+- Ảnh hàng hóa trước khi giao.
+- Ảnh hàng hóa tại nơi nhận.
+- Ảnh biên nhận hoặc chữ ký người nhận.
+- Ghi chú nội dung.
+- Tọa độ GPS.
+- Thời gian thực hiện.
+- Tài khoản nhân viên thực hiện.
+Ví dụ:
+Thông tin	Giá trị
+Đơn hàng	DH000125
+Nhân viên	Nguyễn Văn A
+Trạng thái	Giao thành công
+Thời gian	09:30
+GPS	10.8012, 106.7145
+Ảnh	2 ảnh
+Ghi chú	Đã bàn giao cho bảo vệ
+
+Lưu ý kỹ thuật: GPS trên trình duyệt cần được cấp quyền và thường hoạt động tốt nhất khi ứng dụng đang mở. Không nên cam kết theo dõi liên tục khi nhân viên tắt trình duyệt hoặc điện thoại khóa màn hình. Đây là giới hạn quan trọng của webapp/PWA.
+6. Kiến trúc công nghệ – không VPS, ưu tiên 0 đồng
+Tôi đề xuất kiến trúc sau:
+Frontend – PWA WebApp
+
+React + TypeScript + Tailwind CSS
+
+Điện thoại / Tablet / Máy tính
+
+
+Cloudflare Pages / Workers
+
+Hosting và API serverless
+
+
+Supabase
+
+PostgreSQL, đăng nhập, realtime, lưu ảnh
+
+
+OpenStreetMap
+
+Bản đồ, dữ liệu đường phố
+
+
+
+
+Leaflet + OSRM / Routing Engine
+
+Hiển thị bản đồ, tính tuyến đường và thứ tự điểm giao
+
+
+Thành phần	Công nghệ	Chi phí mục tiêu
+Frontend	React, TypeScript	0đ
+Hosting	Cloudflare Pages	0đ
+API	Cloudflare Workers	0đ trong hạn mức
+Database	Supabase	0đ trong hạn mức
+Đăng nhập	Supabase Auth	0đ trong hạn mức
+Realtime	Supabase Realtime	0đ trong hạn mức
+Ảnh	Supabase Storage	0đ trong hạn mức
+Bản đồ	OpenStreetMap + Leaflet	0đ
+Routing	OSRM hoặc engine tương thích	0đ khi dùng dịch vụ phù hợp hạn mức
+
+Cloudflare Workers Free hiện có hạn mức 100.000 request/ngày; Supabase Free có hạn mức database, lưu trữ ảnh và băng thông riêng. 
+Cloudflare Workers docs+2
+
+
+Một lưu ý rất quan trọng về ngân sách:
+- Không sử dụng Vercel Hobby làm nền tảng vận hành thương mại của doanh nghiệp: chính sách Hobby giới hạn mục đích sử dụng cá nhân, phi thương mại. 
+  Vercel+1
+- OpenStreetMap miễn phí về dữ liệu nhưng máy chủ bản đồ công cộng không có cam kết SLA; phải tuân thủ chính sách tải bản đồ. 
+  OSMF Operations
+- Máy chủ định tuyến công cộng chỉ nên dùng thử nghiệm, không nên phụ thuộc hoàn toàn khi vận hành đông tài xế.
+- Ảnh giao hàng nên nén trước khi tải lên để tiết kiệm dung lượng.
+Do đó, 0 đồng là mục tiêu khả thi cho bản MVP và quy mô nhỏ, nhưng không thể cam kết sử dụng không giới hạn, ổn định mãi mãi mà không phát sinh chi phí.
+7. Cấu trúc dữ liệu cần thiết
+Đội phát triển nên thiết kế database ngay từ đầu theo mô hình quản lý nhiều tài xế, nhiều chuyến và nhiều điểm giao.
+Bảng	Chức năng
+users	Tài khoản, vai trò
+drivers	Hồ sơ nhân viên giao hàng
+vehicles	Xe máy, ô tô, biển số
+orders	Đơn hàng
+delivery_routes	Chuyến giao hàng
+route_stops	Các điểm giao trong chuyến
+delivery_events	Nhật ký từng thao tác
+gps_logs	Lịch sử tọa độ GPS
+delivery_photos	Ảnh giao nhận
+delivery_notes	Ghi chú
+route_history	Lịch sử hành trình
+notifications	Thông báo
+
+Quan hệ quan trọng:
+- Một tài xế có thể có nhiều chuyến.
+- Một chuyến có nhiều điểm giao.
+- Một điểm giao tương ứng một đơn hàng.
+- Một điểm giao có nhiều hình ảnh, ghi chú và sự kiện.
+- Mỗi sự kiện lưu người thực hiện, thời gian và tọa độ.
+8. Dashboard quản trị
+
+
+
+
+
+
+
+dribbble.com
+
+
+Dashboard nên có:
+Tổng đơn hôm nay
+120
+
+
+Đã giao thành công
+85
+
+
+Đang giao
+25
+
+
+Giao thất bại
+10
+
+
+
+Các màn hình quản trị:
+1. Tổng quan hoạt động trong ngày.
+2. Danh sách đơn hàng.
+3. Danh sách tài xế.
+4. Danh sách phương tiện.
+5. Điều phối chuyến giao.
+6. Bản đồ toàn bộ đội giao hàng.
+7. Lịch sử hành trình từng tài xế.
+8. Báo cáo hiệu suất.
+9. Quản lý hình ảnh và biên nhận.
+10. Quản lý tài khoản và phân quyền.
+9. Thuật toán tối ưu lộ trình
+Tôi đề xuất không chỉ sắp xếp theo khoảng cách gần nhất.
+
+Hệ thống cần xét:
+- Loại phương tiện: xe máy hay ô tô.
+- Đường một chiều và hạn chế giao thông.
+- Thời gian giao hàng yêu cầu.
+- Giờ làm việc của tài xế.
+- Thứ tự ưu tiên của đơn.
+- Thời gian dự kiến dừng tại mỗi điểm.
+- Tải trọng và khả năng chở hàng của xe.
+Ví dụ: 8 đơn hàng có thể được hệ thống đề xuất chia thành hai chuyến 5 điểm và 3 điểm. Điều phối viên có quyền điều chỉnh trước khi giao cho nhân viên.
+
+ETA nên được tính theo thời gian chạy tuyến đường cộng thời gian dừng dự kiến. Nếu chưa có nguồn dữ liệu giao thông trực tiếp thì phải ghi rõ đây là ETA ước tính, không phải thời gian dự báo theo tình trạng kẹt xe thực tế.
+10. Lộ trình phát triển
+Tôi khuyên chia làm 4 giai đoạn để không tốn công xây dựng quá nhiều ngay từ đầu.
+Giai đoạn	Nội dung
+1	Quản lý đơn, tài xế, nhận đơn, cập nhật trạng thái
+2	Bản đồ, GPS, ảnh, ghi chú, lịch sử giao
+3	Điều phối nhiều đơn, tối ưu tuyến, ETA
+4	Dashboard, báo cáo, phân quyền, PWA và kiểm thử
+
+Tiêu chí nghiệm thu
+- 2 điều phối viên không thể vô tình phân cùng một đơn cho hai tài xế.
+- 2 tài xế có thể chạy hai lộ trình riêng.
+- Một chuyến có tối thiểu 5–10 điểm giao.
+- Trạng thái từng điểm được cập nhật realtime.
+- Có thể xem lại toàn bộ ảnh và GPS của từng điểm.
+- Khi mất mạng, thao tác chưa đồng bộ được lưu tạm và đồng bộ lại khi có mạng.
+- Không thể tự ý sửa hoặc xóa lịch sử giao hàng đã xác nhận.
+- Có phân quyền quản trị, điều phối và tài xế.
+
+11. Chốt phương án tôi đề xuất
+Khuyến nghị triển khai
+Hachihi Delivery – WebApp PWA
+- Không cần cài ứng dụng từ CH Play.
+- Mở bằng Chrome trên Android, iPhone hoặc máy tính.
+- Có thể thêm biểu tượng ra màn hình điện thoại.
+- Giao diện tiếng Việt.
+- Một tài khoản quản lý toàn bộ đội giao hàng.
+- Điều phối nhiều tài xế và nhiều đơn.
+- Theo dõi GPS, bản đồ và lộ trình.
+- Ảnh, ghi chú, xác nhận giao nhận.
+- Ưu tiên Cloudflare + Supabase + OpenStreetMap.
+- Không mua VPS, không mua phần mềm bản quyền.
+Tôi có 3 quyết định muốn chốt trước khi viết bản thiết kế kỹ thuật hoàn chỉnh cho đội Dev.
+1. Quy mô sử dụng ban đầu
+
+1–5 tài xế
+
+10–20 tài xế
+
+30–50 tài xế
+
+Trên 50 tài xế
+
+
+2. Đơn hàng lấy từ đâu?
+
+Nhập trực tiếp trên webapp
+
+Import Excel
+
+Lấy đơn từ Odoo
+
+Kết hợp tất cả
+
+
+3. Theo dõi GPS như thế nào?
+
+Khi chạy chuyến và khi bấm thao tác
+
+Chỉ khi nhân viên bấm thao tác
+
+Liên tục kể cả khi chạy nền (cần xem xét ứng dụng native)
+
+
+4. Có cần tích hợp Odoo về sau không?
+
+Không cần, hoạt động độc lập
+
+Có, tích hợp sau
+
+Tích hợp ngay từ đầu
+
+Chốt yêu cầu và viết bản thiết kế cho Dev
+Tôi sẽ ưu tiên thiết kế sao cho sau này có thể nâng cấp từ 5 lên 50–100 tài xế mà không phải viết lại toàn bộ hệ thống.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Chốt yêu cầu thiết kế Hachihi Delivery:
+Quy mô: 10–20 tài xế
+Nguồn đơn hàng: Tích hợp Odoo
+GPS: Chỉ khi nhân viên bấm thao tác
+Odoo: Tích hợp ngay
+Hãy viết bản thiết kế kỹ thuật hoàn chỉnh cho đội Dev, ưu tiên 100% miễn phí.
+
+
+
+
+
+
+
+
+
+
+
+
+
+HACHihi DELIVERY – BẢN THIẾT KẾ KỸ THUẬT HOÀN CHỈNH
+Đã chốt yêu cầu nghiệp vụ
+ MVP 10–20 tài xế
+
+Hachihi Delivery
+Hệ thống quản lý và điều phối giao hàng đa điểm – tích hợp Odoo – vận hành trên WebApp/PWA.
+
+Đây là tài liệu đặc tả để đội Dev có thể bắt đầu thiết kế database, xây dựng API, giao diện và triển khai.
+I. Mục tiêu và phạm vi dự án
+1. Yêu cầu đã chốt
+Hạng mục	Quyết định
+Tên dự án	Hachihi Delivery
+Quy mô	10–20 tài xế
+Nền tảng	WebApp PWA
+Giao diện	Tiếng Việt, responsive
+Hệ thống ERP	Tích hợp Odoo ngay từ đầu
+GPS	Chỉ ghi nhận khi nhân viên bấm thao tác
+Bản đồ	OpenStreetMap
+Phương tiện	Xe máy, ô tô
+Điều phối	Nhiều tài xế, nhiều đơn, nhiều điểm
+Hình ảnh	Chụp ảnh trực tiếp từ điện thoại
+Ghi chú	Có thời gian và tọa độ
+Hosting	Không VPS, ưu tiên miễn phí
+Bản quyền	Mã nguồn mở, không mua license
+
+2. Mục tiêu vận hành
+Ví dụ doanh nghiệp có 20 nhân viên giao hàng, mỗi người nhận một chuyến gồm nhiều đơn.
+
+Điều phối viên có thể:
+- Lấy đơn từ Odoo.
+- Chọn 8 đơn và phân cho nhân viên A.
+- Chọn 5 đơn và phân cho nhân viên B.
+- Chọn phương tiện phù hợp.
+- Tự động sắp xếp thứ tự giao.
+- Xem toàn bộ tuyến đường trên bản đồ.
+- Theo dõi từng lần nhân viên bấm thao tác.
+- Xem ảnh chứng minh giao hàng.
+- Đối chiếu trạng thái giao hàng với Odoo.
+Nguyên tắc kiến trúc: Odoo là nguồn dữ liệu nghiệp vụ đơn hàng và khách hàng. Hachihi Delivery là hệ thống điều phối, quản lý hành trình và bằng chứng giao nhận. Không xây dựng hai nguồn dữ liệu đơn hàng độc lập.
+II. Kiến trúc tổng thể
+
+
+
+
+
+
+
+loginextsolutions.com
+
+
+1. Công nghệ đề xuất
+Lớp	Công nghệ	Vai trò
+Frontend	React + TypeScript	Giao diện
+UI	Tailwind CSS	Thiết kế responsive
+PWA	Vite PWA	Cài lên điện thoại
+Map	Leaflet	Bản đồ tương tác
+Map data	OpenStreetMap	Dữ liệu bản đồ
+Database	Supabase PostgreSQL	Lưu dữ liệu
+Authentication	Supabase Auth	Đăng nhập
+Realtime	Supabase Realtime	Đồng bộ trạng thái
+File storage	Supabase Storage	Ảnh giao hàng
+Backend API	Cloudflare Workers	Xử lý nghiệp vụ
+Hosting	Cloudflare Pages	Hosting frontend
+ERP	Odoo 14 API	Đồng bộ đơn hàng
+Routing	OSRM	Tính đường đi
+Route optimization	Thuật toán VRP	Phân chia, sắp xếp điểm giao
+
+Tôi đề xuất dùng Cloudflare Pages thay vì phụ thuộc Vercel Hobby cho dự án doanh nghiệp.
+2. Sơ đồ kết nối
+#chatgpt-mermaid-_r_q0_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-_r_q0_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_q0_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_q0_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-_r_q0_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-_r_q0_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-_r_q0_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-_r_q0_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-_r_q0_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-_r_q0_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q0_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q0_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-_r_q0_ p{margin:0;}#chatgpt-mermaid-_r_q0_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-_r_q0_ .label text,#chatgpt-mermaid-_r_q0_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .node rect,#chatgpt-mermaid-_r_q0_ .node circle,#chatgpt-mermaid-_r_q0_ .node ellipse,#chatgpt-mermaid-_r_q0_ .node polygon,#chatgpt-mermaid-_r_q0_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .rough-node .label text,#chatgpt-mermaid-_r_q0_ .node .label text,#chatgpt-mermaid-_r_q0_ .image-shape .label,#chatgpt-mermaid-_r_q0_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-_r_q0_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .rough-node .label,#chatgpt-mermaid-_r_q0_ .node .label,#chatgpt-mermaid-_r_q0_ .image-shape .label,#chatgpt-mermaid-_r_q0_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-_r_q0_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-_r_q0_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q0_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q0_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-_r_q0_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-_r_q0_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-_r_q0_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-_r_q0_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-_r_q0_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-_r_q0_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q0_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-_r_q0_ .icon-shape,#chatgpt-mermaid-_r_q0_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-_r_q0_ .icon-shape p,#chatgpt-mermaid-_r_q0_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-_r_q0_ .icon-shape .label rect,#chatgpt-mermaid-_r_q0_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-_r_q0_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-_r_q0_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-_r_q0_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node rect,#chatgpt-mermaid-_r_q0_ [data-look="neo"].cluster rect,#chatgpt-mermaid-_r_q0_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-_r_q0_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q0_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-_r_q0_-gradient);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-_r_q0_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q0_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-_r_q0_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-_r_q0_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q0_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-_r_q0_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q0_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(0, 79, 153);}#chatgpt-mermaid-_r_q0_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(0, 79, 153);}#chatgpt-mermaid-_r_q0_ .node tspan[font-weight="normal"],#chatgpt-mermaid-_r_q0_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-_r_q0_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(245, 250, 255);stroke:rgb(206, 219, 229);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .node rect,#chatgpt-mermaid-_r_q0_ .node circle,#chatgpt-mermaid-_r_q0_ .node ellipse,#chatgpt-mermaid-_r_q0_ .node polygon,#chatgpt-mermaid-_r_q0_ .node path{fill:rgb(229, 243, 255);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-_r_q0_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-_r_q0_ .mermaid-decision .label-container{fill:rgb(245, 250, 255);stroke:rgb(206, 219, 229);stroke-dasharray:2,2;}#chatgpt-mermaid-_r_q0_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-_r_q0_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q0_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Odoo 14 ERPCloudflare Workers APISupabase PostgreSQLSupabase AuthSupabase StorageSupabase RealtimeOpenStreetMap + LeafletOSRM + VRP OptimizerĐiều phối viên - WebTài xế - PWA
+
+
+
+
+
+3. Nguyên tắc kết nối Odoo
+Không cho trình duyệt điện thoại hoặc máy tính kết nối trực tiếp bằng tài khoản quản trị Odoo.
+
+Mọi thao tác phải đi qua API trung gian:
+1. API xác thực người gọi.
+2. API kiểm tra quyền.
+3. API gọi Odoo bằng tài khoản tích hợp riêng.
+4. API xử lý và ghi nhận dữ liệu.
+5. API đồng bộ kết quả về Hachihi Delivery.
+Không đưa mật khẩu Odoo, API key hoặc secret vào JavaScript frontend.
+
+III. Thiết kế chức năng chi tiết
+1. Phân hệ quản trị hệ thống
+Các vai trò:
+Vai trò	Quyền
+Super Admin	Toàn quyền hệ thống
+Quản lý	Dashboard, báo cáo, xem tất cả chuyến
+Điều phối viên	Nhận đơn, phân đơn, đổi tài xế, điều phối
+Tài xế	Xem chuyến của mình, cập nhật giao hàng
+Kế toán (mở rộng)	Đối chiếu đơn và giao nhận
+
+Phải có kiểm tra quyền ở backend và database, không chỉ ẩn nút trên giao diện.
+2. Phân hệ đồng bộ đơn hàng Odoo
+
+
+
+
+
+
+
+onnet.my
+
+
+Đối với Odoo 14, đề xuất tích hợp các model sau:
+Model Odoo	Dữ liệu
+sale.order	Đơn bán hàng
+sale.order.line	Chi tiết sản phẩm
+res.partner	Khách hàng, người nhận
+stock.picking	Phiếu giao hàng
+stock.move.line	Sản phẩm xuất kho
+stock.warehouse	Kho xuất hàng
+res.users	Người phụ trách Odoo
+
+Odoo 14 hỗ trợ External API qua XML-RPC và phương thức execute_kw. API key cũng được hỗ trợ từ phiên bản 14. 
+Odoo 14.0 documentation+1
+
+
+Luồng lấy đơn:
+Điều phối viênDelivery DBDelivery APIOdoo 14Điều phối viênDelivery DBDelivery APIOdoo 14#chatgpt-mermaid-_r_q7_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-_r_q7_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_q7_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_q7_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-_r_q7_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-_r_q7_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-_r_q7_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-_r_q7_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-_r_q7_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-_r_q7_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-_r_q7_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-_r_q7_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-_r_q7_ p{margin:0;}#chatgpt-mermaid-_r_q7_ .actor{stroke:rgb(83, 154, 248);fill:rgb(222, 234, 251);stroke-width:1;}#chatgpt-mermaid-_r_q7_ rect.actor.outer-path[data-look="neo"]{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ rect.note[data-look="neo"]{stroke:rgb(107, 198, 127);fill:rgb(243, 243, 243);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ text.actor>tspan{fill:rgb(13, 13, 13);stroke:none;}#chatgpt-mermaid-_r_q7_ .actor-line{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ .innerArc{stroke-width:1.5;stroke-dasharray:none;}#chatgpt-mermaid-_r_q7_ .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ [id$="-arrowhead"] path{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ .sequenceNumber{fill:#707070;}#chatgpt-mermaid-_r_q7_ [id$="-sequencenumber"]{fill:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ [id$="-crosshead"] path{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_q7_ .messageText{fill:rgb(13, 13, 13);stroke:none;}#chatgpt-mermaid-_r_q7_ .labelBox{stroke:rgba(0, 0, 0, 0.1);fill:rgb(252, 252, 252);filter:none;}#chatgpt-mermaid-_r_q7_ .labelText,#chatgpt-mermaid-_r_q7_ .labelText>tspan{fill:rgb(13, 13, 13);stroke:none;}#chatgpt-mermaid-_r_q7_ .loopText,#chatgpt-mermaid-_r_q7_ .loopText>tspan{fill:rgb(13, 13, 13);stroke:none;}#chatgpt-mermaid-_r_q7_ .sectionTitle,#chatgpt-mermaid-_r_q7_ .sectionTitle>tspan{fill:rgb(13, 13, 13);stroke:none;}#chatgpt-mermaid-_r_q7_ .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:rgba(0, 0, 0, 0.1);fill:rgba(0, 0, 0, 0.1);}#chatgpt-mermaid-_r_q7_ .note{stroke:rgb(107, 198, 127);fill:rgb(243, 243, 243);}#chatgpt-mermaid-_r_q7_ .noteText,#chatgpt-mermaid-_r_q7_ .noteText>tspan{fill:rgb(13, 13, 13);stroke:none;font-weight:normal;}#chatgpt-mermaid-_r_q7_ .activation0{fill:rgb(243, 243, 243);stroke:hsl(0, 0%, 85.2941176471%);}#chatgpt-mermaid-_r_q7_ .activation1{fill:rgb(243, 243, 243);stroke:hsl(0, 0%, 85.2941176471%);}#chatgpt-mermaid-_r_q7_ .activation2{fill:rgb(243, 243, 243);stroke:hsl(0, 0%, 85.2941176471%);}#chatgpt-mermaid-_r_q7_ .actorPopupMenu{position:absolute;}#chatgpt-mermaid-_r_q7_ .actorPopupMenuPanel{position:absolute;fill:rgb(222, 234, 251);box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#chatgpt-mermaid-_r_q7_ .actor-man circle,#chatgpt-mermaid-_r_q7_ line{fill:rgb(222, 234, 251);stroke-width:2px;}#chatgpt-mermaid-_r_q7_ g rect.rect{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));stroke:rgb(83, 154, 248);}#chatgpt-mermaid-_r_q7_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node rect,#chatgpt-mermaid-_r_q7_ [data-look="neo"].cluster rect,#chatgpt-mermaid-_r_q7_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-_r_q7_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-_r_q7_-gradient);stroke-width:1px;}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-_r_q7_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-_r_q7_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-_r_q7_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-_r_q7_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_q7_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Lấy phiếu giao hàngPicking, khách hàng, địa chỉChuẩn hóa dữ liệuUpsert đơn hàngDanh sách đơn mớiChọn đơn phân tài xếGhi nhận chuyến giaoCập nhật trạng thái theo quy tắcKết quả xác nhận
+
+
+
+
+
+Không nên lấy tất cả đơn bán hàng rồi cho giao ngay.
+
+Đề xuất lấy các phiếu giao hàng stock.picking có:
+- state = assigned: Đã sẵn sàng giao.
+- state = confirmed hoặc waiting: Có thể hiển thị ở danh sách chờ, nhưng chưa được phép xuất phát nếu chưa đủ hàng.
+- state = done: Đã hoàn thành xuất kho.
+- state = cancel: Đã hủy.
+Quy tắc nghiệp vụ phải cấu hình theo quy trình thực tế của Hachihi.
+
+Thông tin cần lấy từ Odoo:
+- Mã đơn hàng.
+- Mã phiếu xuất kho.
+- Tên khách hàng.
+- Số điện thoại.
+- Địa chỉ giao hàng.
+- Tọa độ GPS nếu đã có.
+- Sản phẩm.
+- Số lượng.
+- Tổng tiền.
+- Ghi chú giao hàng.
+- Kho xuất.
+- Người phụ trách.
+- Trạng thái phiếu xuất.
+Nếu địa chỉ chưa có tọa độ, hệ thống đưa vào danh sách cần xác minh địa chỉ. Không tự động định vị theo địa chỉ mơ hồ rồi coi là chính xác.
+
+Quy tắc đồng bộ hai chiều:
+Sự kiện	Hachihi Delivery	Odoo
+Odoo tạo phiếu giao	Tạo/cập nhật đơn	Nguồn chính
+Phân tài xế	Lưu tài xế	Không nhất thiết cập nhật
+Bắt đầu chuyến	Ghi nhận sự kiện	Có thể ghi log
+Đã đến điểm	Lưu GPS	Không bắt buộc
+Giao thành công	Lưu ảnh, thời gian	Cập nhật theo quy tắc
+Giao thất bại	Lưu lý do	Giữ phiếu xử lý
+Hoàn tất chuyến	Đối chiếu các điểm	Không tự ý xác nhận xuất kho nếu chưa đủ điều kiện
+
+Điểm rất quan trọng: Giao thành công không đồng nghĩa với tự động xác nhận stock.picking hoàn tất. Cần có quy tắc xác nhận giao hàng và xuất kho riêng, tránh làm sai tồn kho Odoo.
+3. Phân hệ điều phối
+
+
+
+
+
+
+
+fleetrunnr.com
+
+
+Màn hình điều phối có ba vùng:
+- Cột trái: Danh sách đơn chưa phân.
+- Trung tâm: Bản đồ các điểm giao.
+- Cột phải: Danh sách tài xế, phương tiện và chuyến giao.
+Chức năng:
+1. Chọn nhiều đơn.
+2. Chọn tài xế.
+3. Chọn phương tiện.
+4. Tạo chuyến giao.
+5. Sắp xếp điểm giao bằng kéo thả.
+6. Tối ưu tự động.
+7. Xem tuyến đường trên bản đồ.
+8. Xác nhận giao chuyến.
+9. Hủy hoặc điều chỉnh chuyến.
+Quy tắc chống trùng đơn: Khi hai điều phối viên cùng chọn một đơn, backend phải sử dụng transaction và kiểm tra trạng thái phân công. Chỉ một người được phép phân đơn thành công.
+4. Thuật toán tối ưu tuyến đường
+Đây là module độc lập, không viết lẫn vào giao diện.
+
+Đầu vào:
+{
+  "vehicle_type": "motorbike",
+  "start_location": {
+    "lat": 10.7769,
+    "lng": 106.7009
+  },
+  "stops": [
+    {"order_id": "DH001", "lat": 10.78, "lng": 106.69},
+    {"order_id": "DH002", "lat": 10.80, "lng": 106.71},
+    {"order_id": "DH003", "lat": 10.77, "lng": 106.72}
+  ]
+}
+
+
+Đầu ra:
+{
+  "optimized": true,
+  "total_distance_km": 12.5,
+  "estimated_minutes": 48,
+  "stop_order": [
+    "DH002",
+    "DH001",
+    "DH003"
+  ]
+}
+
+
+Các con số trong ví dụ chỉ minh họa định dạng, không phải kết quả tính toán thực tế.
+
+Thuật toán chia làm hai cấp:
+
+Cấp 1 – Tối ưu thứ tự điểm giao
+- Lấy ma trận thời gian và khoảng cách giữa các điểm từ routing engine.
+- Tìm thứ tự có tổng thời gian thấp.
+- Giữ các điểm ưu tiên và khung giờ giao bắt buộc.
+- Cho phép điều phối viên chỉnh tay.
+Cấp 2 – Phân nhiều chuyến
+- Chia các đơn theo xe và tài xế.
+- Tính tải trọng.
+- Tính số điểm tối đa mỗi chuyến.
+- Ưu tiên giảm tổng quãng đường.
+- Cân bằng thời gian giữa các tài xế.
+Giai đoạn đầu dùng heuristic (Nearest Neighbor + 2-opt), chưa cần hệ thống tối ưu VRP phức tạp. Sau đó mới nâng cấp Google OR-Tools nếu cần.
+
+Lưu ý: xe máy và ô tô phải có profile định tuyến riêng. Không được dùng chung một tuyến ô tô cho xe máy vì đường cấm, đường một chiều và khả năng tiếp cận khác nhau.
+5. Phân hệ tài xế trên điện thoại
+
+
+
+
+
+
+
+developers-stg.ahamove.com
+
+
+Giao diện phải có nút lớn, dễ thao tác bằng một tay.
+
+Màn hình chính:
+- Chuyến đang thực hiện.
+- Số điểm giao.
+- Số điểm đã hoàn thành.
+- Điểm tiếp theo.
+- Thời gian dự kiến đến.
+- Nút mở bản đồ.
+Mỗi điểm giao có các nút:
+Ví dụ màn hình một điểm giao
+DH000125 – Khách hàng A
+Đang giao
+
+Địa chỉ: 123 Nguyễn Văn A, TP.HCM
+Cách điểm giao 1,2 km (minh họa)
+
+
+Đã đến điểm giao
+
+Ghi nhận giờ và GPS khi bấm
+
+Chụp ảnh
+
+
+Ghi chú
+
+
+
+Xác nhận giao thành công
+
+Giao không thành công
+
+
+Quy tắc xác nhận:
+- Bắt buộc lấy GPS khi bấm đã đến.
+- Giao thành công bắt buộc có GPS và thời gian.
+- Ảnh có thể bắt buộc theo cấu hình từng loại đơn.
+- Giao thất bại phải chọn lý do.
+- Cho phép thêm ghi chú và ảnh bổ sung.
+- Nếu GPS không lấy được, không được giả lập tọa độ. Chuyển sang quy trình xác nhận ngoại lệ.
+6. Lịch sử hành trình
+Mỗi nhân viên có trang riêng:
+Thời gian	Sự kiện	GPS	Ảnh
+08:00	Nhận chuyến	Có	Không
+08:15	Bắt đầu chuyến	Có	Không
+08:30	Đến điểm 1	Có	Không
+08:35	Giao thành công	Có	Có
+09:00	Đến điểm 2	Có	Không
+09:10	Giao thất bại	Có	Có
+
+Vì đã chốt chỉ ghi GPS khi nhân viên bấm thao tác, hệ thống không được âm thầm theo dõi vị trí liên tục.
+
+Màn hình này phải có bộ lọc theo ngày, nhân viên, mã đơn và trạng thái.
+7. Dashboard
+
+
+
+
+
+
+
+dribbble.com
+
+
+Các biểu đồ:
+- Tổng số đơn nhận từ Odoo.
+- Đơn chưa phân.
+- Đơn đang giao.
+- Đơn giao thành công.
+- Đơn giao thất bại.
+- Tỷ lệ giao thành công.
+- Tổng số chuyến.
+- Tổng số km theo lộ trình ước tính.
+- Hiệu suất theo tài xế.
+- Thời gian giao trung bình.
+- Số lần giao thất bại theo nguyên nhân.
+Không lấy khoảng cách đường thẳng giữa các địa chỉ để báo cáo là số km thực tế.
+
+IV. Thiết kế Database PostgreSQL
+Tôi đề xuất 15 bảng chính, chia theo từng nghiệp vụ.
+Bảng	Trường quan trọng
+profiles	id, full_name, phone, role, active
+drivers	user_id, employee_code, status
+vehicles	id, plate_number, vehicle_type, capacity
+orders	id, odoo_picking_id, odoo_order_id, customer, address, lat, lng, status
+order_items	order_id, product_code, product_name, qty
+delivery_routes	id, driver_id, vehicle_id, route_date, status
+route_stops	id, route_id, order_id, sequence, status, eta
+delivery_events	id, stop_id, event_type, user_id, lat, lng, created_at
+delivery_photos	id, event_id, storage_path
+delivery_notes	id, stop_id, user_id, note
+gps_logs	id, driver_id, route_id, event_id, lat, lng
+route_geometry	route_id, geometry, distance_meters
+odoo_sync_logs	id, model, record_id, action, status, error
+audit_logs	id, user_id, action, old_data, new_data
+system_settings	key, value
+
+Quan hệ dữ liệu
+#chatgpt-mermaid-_r_qq_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-_r_qq_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_qq_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-_r_qq_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-_r_qq_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-_r_qq_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-_r_qq_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-_r_qq_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-_r_qq_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-_r_qq_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-_r_qq_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-_r_qq_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_qq_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-_r_qq_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-_r_qq_ p{margin:0;}#chatgpt-mermaid-_r_qq_ .entityBox{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);}#chatgpt-mermaid-_r_qq_ .relationshipLabelBox{fill:rgb(243, 243, 243);opacity:0.7;background-color:rgb(243, 243, 243);}#chatgpt-mermaid-_r_qq_ .relationshipLabelBox rect{opacity:0.5;}#chatgpt-mermaid-_r_qq_ .labelBkg{background-color:rgba(243, 243, 243, 0.5);}#chatgpt-mermaid-_r_qq_ .edgeLabel{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-_r_qq_ .edgeLabel .label rect{fill:rgb(252, 252, 252);}#chatgpt-mermaid-_r_qq_ .edgeLabel .label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-_r_qq_ .edgeLabel .label{fill:rgb(83, 154, 248);font-size:14px;}#chatgpt-mermaid-_r_qq_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-_r_qq_ .edge-pattern-dashed{stroke-dasharray:8,8;}#chatgpt-mermaid-_r_qq_ .node rect,#chatgpt-mermaid-_r_qq_ .node circle,#chatgpt-mermaid-_r_qq_ .node ellipse,#chatgpt-mermaid-_r_qq_ .node polygon{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-_r_qq_ .relationshipLine{stroke:rgb(143, 143, 143);stroke-width:1px;fill:none;}#chatgpt-mermaid-_r_qq_ .marker{fill:none!important;stroke:rgb(143, 143, 143)!important;stroke-width:1;}#chatgpt-mermaid-_r_qq_ [data-look=neo].labelBkg{background-color:rgba(243, 243, 243, 0.5);}#chatgpt-mermaid-_r_qq_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node rect,#chatgpt-mermaid-_r_qq_ [data-look="neo"].cluster rect,#chatgpt-mermaid-_r_qq_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-_r_qq_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_qq_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-_r_qq_-gradient);stroke-width:1px;}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-_r_qq_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_qq_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-_r_qq_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-_r_qq_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_qq_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-_r_qq_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-_r_qq_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}PROFILESDRIVERSDELIVERY_ROUTESVEHICLESROUTE_STOPSORDERSORDER_ITEMSDELIVERY_EVENTSDELIVERY_PHOTOSDELIVERY_NOTESGPS_LOGSROUTE_GEOMETRYhasassignedusedcontainsassignedcontainsrecordshashascreateshas
+
+
+
+
+
+Quy tắc thiết kế database
+1. ID nội bộ sử dụng UUID.
+2. Mã đơn Odoo lưu riêng, có unique constraint.
+3. Một đơn chỉ được nằm trong một điểm giao đang hoạt động.
+4. Một chuyến có nhiều điểm giao.
+5. Không xóa lịch sử giao hàng.
+6. Lưu thời gian theo UTC, hiển thị theo múi giờ Việt Nam.
+7. Lưu tọa độ bằng kiểu dữ liệu phù hợp, có kiểm tra phạm vi.
+8. Có index cho status, route_id, driver_id, created_at.
+9. Bật Row Level Security (RLS).
+10. Ảnh không lưu trực tiếp vào database, chỉ lưu đường dẫn và metadata.
+Bổ sung quan trọng: delivery_events và audit_logs phải là dữ liệu chỉ ghi thêm. Nhân viên không được sửa lịch sử đã xác nhận. Khi cần điều chỉnh phải tạo sự kiện điều chỉnh mới, ghi người duyệt và lý do.
+
+V. Thiết kế API
+API cần được chia module rõ ràng.
+API	Chức năng
+GET /api/orders	Danh sách đơn
+POST /api/orders/sync	Đồng bộ Odoo
+GET /api/orders/:id	Chi tiết đơn
+POST /api/routes	Tạo chuyến
+GET /api/routes	Danh sách chuyến
+POST /api/routes/:id/assign	Phân tài xế
+POST /api/routes/:id/reorder	Đổi thứ tự điểm
+POST /api/routes/:id/optimize	Tối ưu tuyến
+POST /api/routes/:id/start	Bắt đầu chuyến
+POST /api/stops/:id/arrive	Xác nhận đến
+POST /api/stops/:id/complete	Xác nhận giao
+POST /api/stops/:id/fail	Xác nhận thất bại
+POST /api/stops/:id/photos	Upload ảnh
+POST /api/stops/:id/notes	Thêm ghi chú
+GET /api/drivers/:id/history	Lịch sử tài xế
+GET /api/dashboard	Dashboard
+GET /api/maps/route	Lấy tuyến đường
+POST /api/odoo/webhook	Nhận sự kiện Odoo nếu triển khai webhook
+
+Quy chuẩn API
+- JSON UTF-8.
+- Xác thực bằng JWT.
+- Kiểm tra vai trò.
+- Kiểm tra quyền sở hữu chuyến.
+- Idempotency key cho các thao tác giao hàng.
+- Rate limit.
+- Log lỗi.
+- Không trả thông tin nhạy cảm của Odoo ra frontend.
+Ví dụ khi nhân viên xác nhận giao thành công:
+{
+  "event_type": "DELIVERED",
+  "latitude": 10.8012,
+  "longitude": 106.7145,
+  "note": "Đã bàn giao cho khách",
+  "photos": [
+    "upload_001.jpg"
+  ],
+  "client_event_id": "unique-event-id"
+}
+
+
+Backend phải kiểm tra tài xế được phân công cho chuyến, đơn chưa hoàn tất, dữ liệu GPS hợp lệ và ảnh đã upload thành công trước khi ghi nhận hoàn thành.
+
+VI. Bảo mật và xử lý tình huống ngoại lệ
+Đây là phần không được bỏ qua vì hệ thống có dữ liệu khách hàng, địa chỉ, số điện thoại và hình ảnh giao nhận.
+1. Bảo mật
+- Supabase RLS phân quyền từng bảng.
+- Tài xế chỉ xem đơn thuộc chuyến được giao.
+- Điều phối viên xem dữ liệu theo phạm vi được cấp.
+- Super Admin quản lý toàn bộ.
+- Odoo API key lưu trong Cloudflare Secrets.
+- Supabase Service Role Key chỉ được sử dụng ở backend.
+- Ảnh giao hàng lưu ở bucket private.
+- Ảnh chỉ được truy cập qua URL ký có thời hạn.
+- Không công khai số điện thoại và địa chỉ khách hàng trên bản đồ công cộng.
+- Có nhật ký đăng nhập và các thao tác quan trọng.
+2. Xử lý mất mạng
+Tài xế có thể gặp tình huống mất 4G hoặc Wi-Fi khi đang giao hàng.
+
+Thiết kế PWA cần:
+1. Lưu thao tác chưa gửi vào IndexedDB.
+2. Tạo client_event_id duy nhất.
+3. Hiển thị trạng thái chờ đồng bộ.
+4. Khi có mạng, tự động gửi lại.
+5. Backend kiểm tra ID để chống ghi nhận trùng.
+6. Thông báo cho tài xế khi đồng bộ thành công hoặc thất bại.
+Ảnh cần được lưu tạm trong IndexedDB hoặc cơ chế lưu file phù hợp, có giới hạn dung lượng và dọn dẹp sau khi đồng bộ.
+
+Lưu ý: Nếu người dùng xóa dữ liệu trình duyệt hoặc hệ điều hành thu hồi bộ nhớ, dữ liệu chờ đồng bộ có thể mất. Vì vậy cần cảnh báo và không cho kết thúc phiên khi còn dữ liệu chưa đồng bộ.
+3. Các tình huống phải xử lý
+Tình huống	Cách xử lý
+Tài xế mất mạng	Lưu hàng đợi đồng bộ
+Tài xế đóng ứng dụng	Giữ trạng thái chuyến
+Tài xế đăng nhập máy khác	Xác thực lại
+Đơn đã bị hủy trên Odoo	Cảnh báo điều phối
+Đơn được phân trùng	Backend từ chối
+Không lấy được GPS	Báo lỗi, xử lý ngoại lệ
+Ảnh upload thất bại	Giữ trạng thái chờ upload
+Odoo không phản hồi	Retry có giới hạn
+Routing engine lỗi	Hiển thị tuyến thay thế hoặc yêu cầu mở bản đồ
+Tài xế giao thất bại	Lưu nguyên nhân, cho phép điều phối lại
+
+4. Quản lý xung đột đồng bộ Odoo
+Ví dụ:
+- Điều phối đã phân đơn cho tài xế A.
+- Sau đó Odoo hủy phiếu giao hàng.
+- Hệ thống phải phát hiện thay đổi và thông báo điều phối.
+- Không tự động xóa chuyến đã giao hoặc xóa lịch sử.
+Các trạng thái đồng bộ nên có:
+
+SYNCED, PENDING, RETRYING, FAILED, CONFLICT.
+
+VII. Thiết kế bản đồ và định tuyến
+
+
+
+
+
+
+
+routific.com
+
+
+1. Các lớp bản đồ
+- Lớp điểm xuất phát.
+- Lớp điểm giao.
+- Lớp trạng thái giao hàng.
+- Lớp đường đi dự kiến.
+- Lớp đường đi thực tế được tái dựng từ GPS lúc bấm thao tác.
+- Lớp vị trí nhân viên tại lần cập nhật gần nhất.
+2. Các chỉ số hiển thị
+Chỉ số	Ý nghĩa
+Total Distance	Tổng km dự kiến
+Total Duration	Tổng thời gian dự kiến
+Stop ETA	Giờ dự kiến đến từng điểm
+Actual Arrival	Giờ thực tế xác nhận đến
+Delivery Duration	Thời gian giao tại điểm
+Remaining Stops	Số điểm còn lại
+
+Phân biệt hai loại đường đi:
+- Đường dự kiến: tuyến đường từ routing engine.
+- Đường thực tế: chỉ có thể tái dựng một phần từ các tọa độ GPS được ghi nhận khi bấm thao tác.
+Vì không theo dõi GPS liên tục nên không được gọi đường nối giữa các lần bấm là GPS tracking thực tế liên tục.
+3. Routing engine miễn phí
+Đề xuất:
+- OSRM cho tính tuyến đường.
+- Leaflet để vẽ tuyến.
+- OpenStreetMap làm dữ liệu nền.
+- Thuật toán VRP để phân chuyến.
+Không nên sử dụng máy chủ demo OSRM hoặc máy chủ tile công cộng làm hạ tầng đảm bảo vận hành thương mại lâu dài. OSM yêu cầu tuân thủ chính sách sử dụng tile và không cung cấp SLA cho máy chủ tile công cộng. 
+OSMF Operations+1
+
+
+Phương án 0 đồng ban đầu:
+- Sử dụng dịch vụ routing công cộng phù hợp điều khoản, có giới hạn truy vấn.
+- Cache kết quả ma trận tuyến hợp lý.
+- Có adapter để thay routing provider mà không sửa toàn bộ ứng dụng.
+- Nếu cần vận hành ổn định hơn, có thể chuyển sang self-host OSRM trên máy chủ hiện có hoặc dịch vụ riêng sau này.
+
+VIII. Cấu trúc source code
+Tôi đề xuất monorepo để dễ quản lý và phát triển.
+hachihi-delivery/
+│
+├── apps/
+│   ├── web/
+│   │   ├── src/
+│   │   │   ├── pages/
+│   │   │   │   ├── Dashboard/
+│   │   │   │   ├── Orders/
+│   │   │   │   ├── Dispatch/
+│   │   │   │   ├── Routes/
+│   │   │   │   ├── Drivers/
+│   │   │   │   ├── Vehicles/
+│   │   │   │   ├── Reports/
+│   │   │   │   └── Settings/
+│   │   │   ├── components/
+│   │   │   ├── layouts/
+│   │   │   ├── hooks/
+│   │   │   ├── services/
+│   │   │   ├── stores/
+│   │   │   ├── maps/
+│   │   │   └── styles/
+│   │   └── vite.config.ts
+│   │
+│   ├── driver-pwa/
+│   │   ├── src/
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   ├── camera/
+│   │   │   ├── gps/
+│   │   │   ├── offline/
+│   │   │   └── sync/
+│   │   └── vite.config.ts
+│   │
+│   └── worker-api/
+│       ├── src/
+│       │   ├── modules/
+│       │   │   ├── auth/
+│       │   │   ├── orders/
+│       │   │   ├── dispatch/
+│       │   │   ├── routes/
+│       │   │   ├── delivery/
+│       │   │   ├── odoo/
+│       │   │   ├── maps/
+│       │   │   └── reports/
+│       │   ├── middleware/
+│       │   ├── services/
+│       │   ├── repositories/
+│       │   └── index.ts
+│       └── wrangler.toml
+│
+├── packages/
+│   ├── shared-types/
+│   ├── validation/
+│   └── route-optimizer/
+│
+├── supabase/
+│   ├── migrations/
+│   ├── seed.sql
+│   └── policies/
+│
+├── docs/
+│   ├── REQUIREMENTS.md
+│   ├── DATABASE.md
+│   ├── API.md
+│   ├── ODOO-INTEGRATION.md
+│   ├── ROUTING.md
+│   ├── SECURITY.md
+│   └── TESTING.md
+│
+└── README.md
+
+
+Quy tắc phát triển
+- TypeScript strict mode.
+- Không viết toàn bộ logic trong một file.
+- Tách Odoo adapter khỏi nghiệp vụ giao hàng.
+- Tách routing provider khỏi thuật toán tối ưu.
+- Có log cho từng module.
+- Có unit test và integration test.
+- Không sửa trực tiếp database production.
+- Tất cả thay đổi database phải qua migration.
+
+IX. Phương án triển khai miễn phí
+Cloudflare
+Free plan
+
+Hosting frontend và API.
+Supabase
+Free plan
+
+Database, xác thực, realtime, ảnh.
+OpenStreetMap
+Dữ liệu mở
+
+Bản đồ nền, tuân thủ chính sách tile.
+OSRM
+Có giới hạn
+
+Định tuyến thử nghiệm; cần phương án thay thế.
+Odoo 14
+Hệ thống sẵn có
+
+Nguồn dữ liệu đơn hàng, khách hàng và kho.
+Các giới hạn cần đội Dev hiểu rõ
+Hạ tầng	Giới hạn đáng chú ý
+Cloudflare Workers Free	100.000 request/ngày, CPU 10 ms/request
+Supabase Free	Database 500 MB, storage 1 GB, egress 5 GB
+Supabase Free	Project có thể bị tạm dừng khi không hoạt động 1 tuần
+Supabase Realtime	200 kết nối đồng thời theo hạn mức Free
+OSM tile server	Không có SLA, phải tuân thủ chính sách sử dụng
+
+
+Cloudflare Workers docs+4
+Với 10–20 tài xế, các hạn mức này có thể đủ cho giai đoạn thử nghiệm và lượng ảnh vừa phải. Tuy nhiên, Supabase Free có cơ chế tạm dừng project và không có SLA như gói trả phí. Vì vậy, cần kiểm thử thực tế trước khi đưa vào hoạt động chính thức.
+
+Một vấn đề đặc biệt với Odoo: nếu Odoo đang chạy trong mạng nội bộ công ty, Cloudflare Worker không thể tự truy cập IP LAN. Cần một kết nối HTTPS an toàn, chẳng hạn Cloudflare Tunnel, hoặc một integration agent chạy trong mạng công ty. Không mở cổng quản trị Odoo trực tiếp ra Internet.
+
+Tài khoản tích hợp Odoo phải được phân quyền tối thiểu, không sử dụng tài khoản Administrator.
+
+X. Kế hoạch triển khai cho đội Dev
+Tôi đề xuất 6 giai đoạn, có nghiệm thu riêng.
+Giai đoạn	Nội dung	Kết quả
+1	Khởi tạo source, database, auth, phân quyền	Đăng nhập hoạt động
+2	Tích hợp Odoo 14	Đồng bộ phiếu giao
+3	Quản lý tài xế, xe, điều phối	Tạo và phân chuyến
+4	Bản đồ, tối ưu tuyến, ETA	Điều phối đa điểm
+5	Driver PWA, GPS, ảnh, ghi chú	Hoàn tất quy trình giao
+6	Dashboard, báo cáo, bảo mật, offline	MVP hoàn chỉnh
+
+Bộ kiểm thử nghiệm thu
+Nghiệm thu nghiệp vụ
+0/14 tiêu chí đạt
+
+0%
+
+
+
+[ ] Đồng bộ đơn Odoo không tạo bản ghi trùng
+[ ] Phân 8 đơn cho tài xế A và 5 đơn cho tài xế B
+[ ] Hỗ trợ đồng thời xe máy và ô tô
+[ ] Sắp xếp thứ tự 5 điểm giao
+[ ] Hiển thị tuyến đường và ETA từng điểm
+[ ] Xác nhận đến điểm có GPS và thời gian
+[ ] Giao thành công có ảnh theo cấu hình
+[ ] Giao thất bại có lý do
+[ ] Xem lại toàn bộ hành trình từng tài xế
+[ ] Hai điều phối viên không phân trùng đơn
+[ ] Mất mạng có lưu hàng đợi và đồng bộ lại
+[ ] Tài xế không xem được đơn của người khác
+[ ] Đối chiếu trạng thái giao với Odoo
+[ ] Có nhật ký chỉnh sửa và xử lý ngoại lệ
+Đặt lại checklist
+Tiêu chuẩn hoàn thành MVP
+- 20 tài xế đăng nhập và sử dụng được.
+- Điều phối nhiều chuyến cùng lúc.
+- Mỗi chuyến có nhiều điểm giao.
+- Tài xế thao tác được trên Android và iPhone.
+- Đơn hàng đồng bộ được với Odoo.
+- Không mất dữ liệu giao nhận đã đồng bộ.
+- Có bản đồ, ảnh, ghi chú và lịch sử.
+- Có phân quyền và nhật ký đầy đủ.
+- Không phát sinh chi phí dịch vụ trong điều kiện sử dụng nằm trong hạn mức miễn phí.
+
+XI. Những thông tin kỹ thuật cần xác nhận trước khi code
+Có 3 điểm đội Dev cần kiểm tra trực tiếp trong môi trường Odoo trước khi khóa API:
+1. Phiên bản Odoo: bản thiết kế đang lấy Odoo 14 làm chuẩn.
+2. Môi trường Odoo: Odoo Online, VPS riêng hay máy chủ nội bộ công ty.
+3. Quy trình kho: Hachihi xác nhận stock.picking ở thời điểm nào: khi xuất kho, khi nhân viên nhận hàng hay sau khi giao thành công.
+Các điểm này quyết định cách đồng bộ và bảo đảm không sai tồn kho. 
+XII. Kết quả bàn giao cho đội Dev
+Tôi đề nghị đội Dev thực hiện theo thứ tự:
+Ưu tiên	Hạng mục bàn giao
+P0	Database SQL và migration
+P0	Odoo 14 Integration Adapter
+P0	Authentication và phân quyền
+P1	API quản lý đơn và điều phối
+P1	Driver PWA
+P1	GPS, ảnh, ghi chú
+P2	Bản đồ, routing, ETA
+P2	Dashboard và báo cáo
+P3	Offline, tối ưu hiệu suất, bảo mật nâng cao
+
+Không nên bắt đầu bằng giao diện bản đồ. Hãy làm Odoo integration và database trước, sau đó mới xây dựng điều phối. Nếu nền tảng dữ liệu sai, toàn bộ hệ thống phía sau sẽ phải sửa lại.
+Định hướng sản phẩm cuối cùng
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+10
+
+
+
+
+
+
+
+
+
+
+Hachihi Delivery cần đạt được mục tiêu: quản lý có thể ngồi tại văn phòng, nhìn vào màn hình là biết:
+- Đơn nào chưa có người giao.
+- Đơn nào đã phân tài xế.
+- Ai đang giao đơn nào.
+- Ai đã đến điểm giao.
+- Đơn nào đã giao, đơn nào thất bại.
+- Hình ảnh và vị trí xác nhận giao.
+- Lộ trình từng tài xế.
+- Thời gian dự kiến hoàn thành chuyến.
+- Đối chiếu được với phiếu giao hàng trên Odoo.
+Đây là thiết kế nền tảng có thể phát triển tiếp thành hệ thống quản lý đội giao hàng riêng của Hachihi, không chỉ là một ứng dụng ghi nhận giao hàng.
+
+Bước triển khai tiếp theo hợp lý nhất là xây dựng bộ SQL Database hoàn chỉnh + API Contract + Odoo 14 Adapter mẫu, để Dev có thể bắt tay vào lập trình mà không phải tự suy diễn nghiệp vụ.
+
+Bạn cũng có thể dùng nhắc việc để rà soát tiến độ triển khai với đội Dev sau này:
+🚚Nhắc rà soát tiến độ Hachihi DeliveryNhấn để thiết lập
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Open trẻ em map hay google  map hay hơn
+
+
+
+
+
+
+
+
+
+
+
+
+
+Với dự án Hachihi Delivery, tôi đánh giá Google Maps tốt hơn về trải nghiệm dẫn đường và dữ liệu giao thông, còn OpenStreetMap (OSM) tốt hơn về chi phí và khả năng tự chủ hệ thống.
+
+Tuy nhiên, nếu mục tiêu là 100% miễn phí và có 10–20 tài xế, tôi không khuyên dùng Google Maps làm nền tảng bản đồ chính ngay từ đầu.
+1. So sánh thực tế
+Tiêu chí	OpenStreetMap	Google Maps
+Bản đồ đường phố	Tốt	Rất tốt
+Tìm địa chỉ	Phụ thuộc dịch vụ geocoding	Rất tốt
+Định tuyến ô tô	Có	Rất tốt
+Định tuyến xe máy	Phụ thuộc routing engine	Có hỗ trợ
+Giao thông trực tiếp	Không mặc định	Có
+ETA	Ước tính	Có thể tính theo giao thông
+Tùy biến bản đồ	Rất tốt	Tốt
+Chi phí	Có thể miễn phí	Có hạn mức miễn phí, sau đó tính phí
+Tự chủ dữ liệu	Cao	Phụ thuộc Google
+
+Google Routes API hỗ trợ tuyến đường xe máy 2 bánh, ô tô và thông tin giao thông. 
+Google for Developers+1
+
+2. Tôi đề xuất phương án kết hợp
+Phương án phù hợp Hachihi Delivery
+
+
+
+
+
+
+
+
+
+OpenStreetMap + Leaflet
+
+Bản đồ chính trong Dashboard, đánh dấu điểm giao, vẽ nhiều tuyến đường.
+Ưu tiên miễn phí
+
+
+
+
+
+
+
+
+
+
+
+
+Google Maps
+
+Dùng để tài xế mở dẫn đường thực tế trên điện thoại.
+Không cần tích hợp API trả phí
+
+
+
+
+
+
+
+
+
+
+
+
+OSRM / Routing Engine
+
+Tính tuyến đường, khoảng cách và thứ tự điểm giao.
+
+
+
+Ví dụ tài xế nhận 5 điểm giao:
+1. Dashboard vẽ 5 điểm trên OpenStreetMap.
+2. Hệ thống tính thứ tự giao.
+3. Điều phối viên xác nhận lộ trình.
+4. Tài xế bấm điểm giao số 1.
+5. Chọn Mở Google Maps dẫn đường.
+6. Giao xong, quay lại Hachihi Delivery xác nhận và chụp ảnh.
+7. Chuyển sang điểm số 2.
+3. Tại sao không dùng Google Maps API hoàn toàn?
+Google có hạn mức miễn phí theo từng dịch vụ, ví dụ Dynamic Maps và Routes Essentials hiện có 10.000 lượt sử dụng miễn phí/tháng cho mỗi SKU đủ điều kiện. Sau hạn mức sẽ tính phí. Cần bật billing và thiết lập giới hạn ngân sách. 
+Google for Developers+2
+
+
+Còn OSM miễn phí dữ liệu bản đồ, nhưng máy chủ tile công cộng không phải dịch vụ miễn phí không giới hạn và không có SLA. 
+OSMF Operations
+
+4. Chốt kiến trúc bản đồ
+Tôi đề nghị ghi vào tài liệu kỹ thuật của Dev:
+- Dashboard: OpenStreetMap + Leaflet.
+- Vẽ nhiều tuyến đường: Routing Engine.
+- Tối ưu thứ tự giao: OSRM + thuật toán tối ưu.
+- Tài xế dẫn đường: Mở Google Maps bằng liên kết điều hướng.
+- ETA nội bộ: Tính từ routing engine, ghi rõ là dự kiến.
+- Google Maps API: Không bắt buộc, chỉ tích hợp sau nếu cần dữ liệu giao thông và ETA tốt hơn.
+Một quyết định kiến trúc rất quan trọng: phải thiết kế MapProvider và RoutingProvider độc lập. Sau này muốn đổi từ OSM sang Google Maps hoặc nhà cung cấp khác thì không phải viết lại toàn bộ Hachihi Delivery.
+
+Như vậy, tôi chọn OSM làm bản đồ quản lý, Google Maps làm công cụ dẫn đường cho tài xế. Đây là phương án cân bằng tốt nhất giữa trải nghiệm và mục tiêu 0 đồng.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Việt lại  1 file hoàn chỉnh chuẩn cho đôi  dev triển khai.  Flie md nếu cần thiết cho ai đọc  được
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tôi sẽ chuẩn hóa thành một tài liệu Markdown duy nhất (README_HACHHI_DELIVERY.md) để đội Dev có thể dùng trực tiếp làm đặc tả triển khai.
+
+Tài liệu sẽ bao gồm yêu cầu nghiệp vụ, kiến trúc miễn phí ưu tiên, lựa chọn OpenStreetMap kết hợp Google Maps, thiết kế Odoo 14, database, API, phân quyền, bảo mật, xử lý mất mạng, lộ trình phát triển và tiêu chí nghiệm thu. Những giới hạn của các gói miễn phí cũng sẽ được ghi rõ để đội Dev không thiết kế vượt quá khả năng vận hành thực tế.
+
+
+
+
+
+
+
+
+
+Phân tích đã tạm ngừng
+
+
+
+
+
+
+
+
+
+
+full file
+
+
+
+
+
+
+
+
+
+
+
+
+Phân tích đã tạm ngừng

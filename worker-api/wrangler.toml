@@ -1,0 +1,27 @@
+name = "hachihi-delivery-worker-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+ENVIRONMENT = "production"
+# Origin của app (nhiều origin: ngăn cách bằng dấu phẩy)
+ALLOWED_ORIGINS = "https://app.hachihi.com"
+ODOO_URL = "https://erp.hachihi.vn"
+ODOO_DB = "hachihi_production"
+SUPABASE_URL = "https://xyzcompany.supabase.co"
+GEOCODE_PROVIDER = "goong"          # goong | google | none
+OSRM_URL = "https://router.project-osrm.org"   # chỉ để thử; production nên tự host OSRM
+EMAIL_DOMAIN = "hachihi.local"
+WINDOW_TOLERANCE_MIN = "60"
+# DEFAULT_BRANCH_ID = "<uuid chi nhánh>"
+# ODOO_DONE_METHOD = "action_done"   # nếu Odoo cần gọi method để chuyển sang done
+
+# Cron mỗi 5 phút: đồng bộ Odoo, ghi ngược, geocode, cảnh báo (đổi thành "* * * * *" nếu cần cảnh báo sát hơn)
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Secrets (wrangler secret put <TÊN>):
+#   ODOO_UID  ODOO_API_KEY
+#   SUPABASE_ANON_KEY  SUPABASE_SERVICE_ROLE_KEY
+#   GEOCODE_API_KEY
+# Route/domain: cấu hình trong Cloudflare Dashboard hoặc thêm [[routes]] theo domain của bạn.

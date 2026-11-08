@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Hachihi Delivery - Multi-Stop Dispatch & Driver PWA",
+  "short_name": "Hachihi",
+  "description": "Nền tảng điều phối giao hàng đa điểm tích hợp Odoo 14 ERP, Leaflet OSM, GPS Tracking & Push Notification.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

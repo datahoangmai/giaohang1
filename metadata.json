@@ -1,0 +1,10 @@
+{
+  "name": "Remix Hachihi Delivery - Zero-Cost Multi-Stop Dispatch \u0026 Driver PWA _ 011126",
+  "description": "Bản thiết kế kỹ thuật chuẩn và nền tảng điều phối giao hàng đa điểm 100% Free Tier tích hợp Odoo 14 ERP, Leaflet OSM, Cloudflare Workers \u0026 Supabase.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
