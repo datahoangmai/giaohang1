@@ -12,8 +12,8 @@
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "ENVIRONMENT": "production",
-    "ODOO_URL": "https://SUA-DIA-CHI-ODOO-CUA-BAN",
-    "ODOO_DB": "SUA-TEN-DATABASE-ODOO",
+    "ODOO_URL": "https://erp.hangchinhhieu.vn",
+    "ODOO_DB": "DB_HCH_PRO_V2_2023072023",
     "SUPABASE_URL": "https://ggftiysmnxoujclvmyfb.supabase.co",
     "GEOCODE_PROVIDER": "none",
     "EMAIL_DOMAIN": "hachihi.local",
