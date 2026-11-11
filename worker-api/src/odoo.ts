@@ -214,15 +214,24 @@ export interface SyncStats {
   durationMs: number;
 }
 
-export async function syncOdoo(env: Env, opts: { full?: boolean; maxGeocode?: number } = {}): Promise<SyncStats> {
+export async function syncOdoo(
+  env: Env,
+  opts: { full?: boolean; maxGeocode?: number; ids?: number[]; states?: string[] } = {}
+): Promise<SyncStats> {
   const t0 = Date.now();
   const branch = await getDefaultBranch(env);
   const stateRows = await svc<any[]>(env, 'sync_state?key=eq.odoo_shipping&select=value');
   const lastWrite: string | null = opts.full ? null : stateRows?.[0]?.value?.last_write_date || null;
 
-  const domain = lastWrite
-    ? [['write_date', '>=', lastWrite]]
-    : [['state', 'in', ['draft', 'ready', 'assigned', 'in_delivery']]];
+  // Nạp chọn lọc (người dùng tự chọn đơn / trạng thái): không dùng và không làm tiến mốc đồng bộ tự động.
+  const selective = Boolean(opts.ids?.length || opts.states?.length);
+  const domain = opts.ids?.length
+    ? [['id', 'in', opts.ids]]
+    : opts.states?.length
+      ? [['state', 'in', opts.states]]
+      : lastWrite
+        ? [['write_date', '>=', lastWrite]]
+        : [['state', 'in', ['draft', 'ready', 'assigned', 'in_delivery']]];
 
   const records: OdooShipping[] = [];
   const PAGE = 200;
@@ -334,8 +343,8 @@ export async function syncOdoo(env: Env, opts: { full?: boolean; maxGeocode?: nu
       await svc(env, 'alerts?on_conflict=dedupe_key', { method: 'POST', body: conflictAlerts, prefer: 'resolution=ignore-duplicates,return=minimal' });
     }
 
-    stats.lastWriteDate = records.reduce((mx, r) => (r.write_date > mx ? r.write_date : mx), lastWrite || '');
-    await svc(env, 'sync_state?on_conflict=key', {
+    if (!selective) stats.lastWriteDate = records.reduce((mx, r) => (r.write_date > mx ? r.write_date : mx), lastWrite || '');
+    if (!selective) await svc(env, 'sync_state?on_conflict=key', {
       method: 'POST',
       body: { key: 'odoo_shipping', value: { last_write_date: stats.lastWriteDate, last_run_at: new Date().toISOString(), last_stats: { fetched: stats.fetched } }, updated_at: new Date().toISOString() },
       prefer: 'resolution=merge-duplicates,return=minimal',
@@ -347,6 +356,69 @@ export async function syncOdoo(env: Env, opts: { full?: boolean; maxGeocode?: nu
   stats.geocodePending = g.remaining;
   stats.durationMs = Date.now() - t0;
   return stats;
+}
+
+// ---------------------------------------------------------------------------
+// Xem trước phiếu trong Odoo (CHỈ ĐỌC, không ghi gì vào Supabase)
+// ---------------------------------------------------------------------------
+export const ODOO_STATES = ['draft', 'ready', 'assigned', 'in_delivery', 'done', 'cancel'] as const;
+
+export interface OdooPreview {
+  counts: Record<string, number>;
+  total: number;
+  offset: number;
+  limit: number;
+  items: Array<{
+    id: number; name: string; state: string; customer: string; sale: string; phone: string;
+    toAddress: string; totalAmount: number; tracking: string; carrier: string; hasInstallation: boolean;
+    scheduledDate: string; createDate: string; imported: boolean;
+  }>;
+}
+
+export async function odooPreview(
+  env: Env,
+  opts: { states: string[]; q: string; offset: number; limit: number }
+): Promise<OdooPreview> {
+  const counts: Record<string, number> = {};
+  await Promise.all(
+    ODOO_STATES.map(async (st) => {
+      counts[st] = await odooExec<number>(env, 'shipping.order', 'search_count', [[['state', '=', st]]]);
+    })
+  );
+
+  const domain: any[] = [];
+  if (opts.states.length) domain.push(['state', 'in', opts.states]);
+  if (opts.q) {
+    domain.push('|', '|', '|', ['name', 'ilike', opts.q], ['x_mvd', 'ilike', opts.q], ['partner_shipping_id', 'ilike', opts.q], ['sale_id', 'ilike', opts.q]);
+  }
+  const total = await odooExec<number>(env, 'shipping.order', 'search_count', [domain]);
+  const rows = total
+    ? await odooExec<OdooShipping[]>(env, 'shipping.order', 'search_read', [domain], {
+        fields: SHIPPING_FIELDS, limit: opts.limit, offset: opts.offset, order: 'id desc',
+      })
+    : [];
+
+  // Phiếu nào đã có trong app
+  const imported = new Set<string>();
+  if (rows.length) {
+    const have = await svc<any[]>(
+      env,
+      `orders?source_system=eq.odoo&source_model=eq.shipping.order&source_record_id=${inList(rows.map((r) => r.id))}&select=source_record_id`
+    );
+    for (const h of have || []) imported.add(String(h.source_record_id));
+  }
+  const nm = (v: unknown) => (Array.isArray(v) ? String(v[1] ?? '') : '');
+  return {
+    counts, total, offset: opts.offset, limit: opts.limit,
+    items: rows.map((r) => ({
+      id: r.id, name: r.name, state: r.state, customer: nm(r.partner_shipping_id), sale: nm(r.sale_id),
+      phone: r.phone ? String(r.phone) : '', toAddress: r.to_address ? String(r.to_address) : '',
+      totalAmount: Number(r.total_amount) || 0, tracking: r.x_mvd ? String(r.x_mvd) : '',
+      carrier: r.x_dvvt ? String(r.x_dvvt) : '', hasInstallation: Boolean(r.x_hotrolapdat),
+      scheduledDate: r.scheduled_date ? String(r.scheduled_date) : '', createDate: r.create_date ? String(r.create_date) : '',
+      imported: imported.has(String(r.id)),
+    })),
+  };
 }
 
 export async function geocodePending(env: Env, limit: number): Promise<{ done: number; remaining: number }> {
