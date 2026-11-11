@@ -16,6 +16,18 @@ export interface OdooHealth {
   steps: { step: string; ok: boolean; detail: string }[];
 }
 
+/** Một dòng xem trước phiếu trong Odoo (chưa nạp vào hệ thống) */
+export interface OdooPreviewItem {
+  id: number; name: string; state: string; customer: string; sale: string; phone: string;
+  toAddress: string; totalAmount: number; tracking: string; carrier: string; hasInstallation: boolean;
+  scheduledDate: string; createDate: string; imported: boolean;
+}
+export interface OdooPreview {
+  counts: Record<string, number>;
+  total: number; offset: number; limit: number;
+  items: OdooPreviewItem[];
+}
+
 type LiveInfo = {
   dbId: string;
   lat: number | null;
@@ -33,6 +45,22 @@ class OdooShippingServiceClass {
   /** Kiểm tra kết nối Odoo thật (Worker gọi Odoo, trả kết quả từng bước) */
   public async testConnection(): Promise<OdooHealth> {
     return api<OdooHealth>('/api/odoo/test');
+  }
+
+  /** Xem trước phiếu trong Odoo theo trạng thái (chỉ đọc, chưa ghi gì vào hệ thống) */
+  public async previewOdoo(p: { states: string[]; q?: string; offset?: number; limit?: number }): Promise<OdooPreview> {
+    const qs = new URLSearchParams();
+    if (p.states.length) qs.set('states', p.states.join(','));
+    if (p.q) qs.set('q', p.q);
+    qs.set('offset', String(p.offset ?? 0));
+    qs.set('limit', String(p.limit ?? 50));
+    return api<OdooPreview>(`/api/odoo/preview?${qs.toString()}`);
+  }
+
+  /** Nạp vào hệ thống đúng các phiếu đã chọn (ids) hoặc toàn bộ phiếu theo trạng thái (states) */
+  public async importFromOdoo(sel: { ids?: number[]; states?: string[] }): Promise<{ fetched: number; inserted: number; updated: number }> {
+    const r = await api<{ stats: { fetched: number; inserted: number; updated: number } }>('/api/odoo/sync', { method: 'POST', body: sel });
+    return r.stats;
   }
 
   public async fetchShippingOrders(
