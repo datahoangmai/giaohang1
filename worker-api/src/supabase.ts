@@ -27,6 +27,14 @@ export interface AuthContext {
 type RestInit = Omit<RequestInit, 'body'> & { body?: unknown; prefer?: string };
 
 /**
+ * Khóa kiểu mới của Supabase (sb_publishable_... / sb_secret_...) không phải JWT nên CHỈ gửi qua header apikey,
+ * không gửi trong Authorization. Khóa cũ (anon / service_role, dạng JWT eyJ...) vẫn gửi cả hai như trước.
+ */
+function bearer(tokenOrKey: string): Record<string, string> {
+  return tokenOrKey.startsWith('eyJ') ? { Authorization: `Bearer ${tokenOrKey}` } : {};
+}
+
+/**
  * Gọi PostgREST. token = JWT người dùng (RLS áp dụng); bỏ trống = service_role (bỏ qua RLS).
  */
 export async function rest<T = any>(env: Env, token: string | null, path: string, init: RestInit = {}): Promise<T> {
@@ -34,7 +42,7 @@ export async function rest<T = any>(env: Env, token: string | null, path: string
   const key = token ? env.SUPABASE_ANON_KEY : env.SUPABASE_SERVICE_ROLE_KEY;
   const h: Record<string, string> = {
     apikey: key,
-    Authorization: `Bearer ${token || env.SUPABASE_SERVICE_ROLE_KEY}`,
+    ...bearer(token || env.SUPABASE_SERVICE_ROLE_KEY),
     'Content-Type': 'application/json',
     ...((headers as Record<string, string>) || {}),
   };
@@ -68,7 +76,7 @@ export async function gotrue(env: Env, path: string, init: { method?: string; bo
     method: init.method || 'GET',
     headers: {
       apikey: key,
-      Authorization: `Bearer ${init.token || key}`,
+      ...bearer(init.token || key),
       'Content-Type': 'application/json',
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
