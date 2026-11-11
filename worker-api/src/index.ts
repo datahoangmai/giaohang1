@@ -18,7 +18,17 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
   const m = req.method;
   let g: RegExpMatchArray | null;
 
-  if (p === '/' || p === '/api/health') return json({ status: 'online', service: 'hachihi-delivery-worker', time: new Date().toISOString() });
+  if (p === '/' || p === '/api/health') {
+    // Chỉ liệt kê TÊN cấu hình còn thiếu (không lộ giá trị) để dễ chẩn đoán sau khi deploy.
+    const missing = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'ODOO_URL', 'ODOO_DB', 'ODOO_UID', 'ODOO_API_KEY'].filter((k) => !(env as any)[k]);
+    return json({ status: 'online', service: 'hachihi-delivery-worker', time: new Date().toISOString(), missingConfig: missing });
+  }
+
+  // Thiếu cấu hình bắt buộc thì báo rõ thay vì "Lỗi máy chủ nội bộ"
+  if (p.startsWith('/api/auth/') || p.startsWith('/api/admin/') || p.startsWith('/api/odoo/')) {
+    const need = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'].filter((k) => !(env as any)[k]);
+    if (need.length) throw new HttpError(500, `Máy chủ chưa cấu hình: ${need.join(', ')} (đặt trong Cloudflare → Settings → Variables and Secrets).`);
+  }
 
   // Xác thực
   if (p === '/api/auth/login' && m === 'POST') return login(req, env);
