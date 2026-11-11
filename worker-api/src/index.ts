@@ -7,7 +7,7 @@ import { computeAlerts } from './alerts';
 import { type Env, type ExecutionContext, type ScheduledEvent } from './env';
 import { HttpError, corsHeaders, json } from './http';
 import { listOdooShaped, patchRoute, setOrderLocation, startRoute, stopEvent } from './delivery';
-import { geocodePending, odooHealth, processOdooQueue, syncOdoo } from './odoo';
+import { ODOO_STATES, geocodePending, odooHealth, odooPreview, processOdooQueue, syncOdoo } from './odoo';
 import { confirmOptimization, discardOptimization, runOptimization } from './planning';
 import { audit, requireAuth, svc } from './supabase';
 import { changePassword, createUser, listUsers, login, me, refresh, resetPassword, updateUser } from './users';
@@ -46,7 +46,12 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
   if (p === '/api/odoo/sync' && m === 'POST') {
     const a = await requireAuth(req, env, ['admin', 'dispatcher']);
     const full = url.searchParams.get('full') === '1' && a.profile.role === 'admin';
-    const stats = await syncOdoo(env, { full });
+    // Nạp chọn lọc: body { ids?: number[], states?: string[] } (tối đa 500 phiếu / lần)
+    let body: { ids?: unknown; states?: unknown } = {};
+    try { body = await req.json(); } catch { /* không có body = đồng bộ mặc định */ }
+    const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 500) : [];
+    const states = Array.isArray(body.states) ? body.states.map(String).filter((x) => (ODOO_STATES as readonly string[]).includes(x)) : [];
+    const stats = await syncOdoo(env, { full, ids, states });
     await audit(env, a.profile.id, 'odoo.sync', 'odoo', null, null, stats, req);
     return json({ ok: true, stats });
   }
@@ -57,6 +62,14 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
       svc<any[]>(env, 'odoo_sync_jobs?status=in.(pending,failed,conflict)&select=id,status,attempts,last_error,source_record_id,created_at&order=created_at.desc&limit=50'),
     ]);
     return json({ state: state?.[0] || null, queue: jobs || [] });
+  }
+  if (p === '/api/odoo/preview' && m === 'GET') {
+    await requireAuth(req, env, ['admin', 'dispatcher']);
+    const states = (url.searchParams.get('states') || '').split(',').filter((x) => (ODOO_STATES as readonly string[]).includes(x));
+    const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
+    const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
+    return json(await odooPreview(env, { states, q, offset, limit }));
   }
   if (p === '/api/odoo/test' && m === 'GET') {
     await requireAuth(req, env, ['admin', 'dispatcher']);
