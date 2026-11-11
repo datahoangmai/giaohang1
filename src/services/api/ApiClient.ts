@@ -2,18 +2,18 @@ import type { AppUser, AuthSession } from '../../types/auth';
 
 const env = ((import.meta as any).env || {}) as Record<string, any>;
 
+/** Để trống = API cùng địa chỉ với web (Worker gộp). Chỉ điền khi API nằm ở địa chỉ khác. */
 export const WORKER_URL: string = String(env.VITE_WORKER_URL || env.VITE_CLOUDFLARE_WORKER_URL || '').replace(/\/$/, '');
 export const SUPABASE_URL: string = String(env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 export const SUPABASE_ANON_KEY: string = String(env.VITE_SUPABASE_ANON_KEY || '');
 
 /** Danh sách biến VITE_* đang thiếu (để báo lỗi rõ ràng) */
 export const missingConfig: string[] = [
-  ...(WORKER_URL ? [] : ['VITE_WORKER_URL']),
   ...(SUPABASE_URL ? [] : ['VITE_SUPABASE_URL']),
   ...(SUPABASE_ANON_KEY ? [] : ['VITE_SUPABASE_ANON_KEY']),
 ];
 
-export const isLiveConfigured = Boolean(WORKER_URL && SUPABASE_URL && SUPABASE_ANON_KEY);
+export const isLiveConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 const SESSION_KEY = 'hachihi_session_v4';
 
@@ -98,7 +98,7 @@ async function ensureFresh() {
 
 /** Gọi Worker API kèm JWT; tự làm mới token khi gần hết hạn hoặc gặp 401 */
 export async function api<T = any>(path: string, init: { method?: string; body?: unknown } = {}, retry = true): Promise<T> {
-  if (!isLiveConfigured) throw new ApiError(0, 'Chưa cấu hình VITE_WORKER_URL / VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.');
+  if (!isLiveConfigured) throw new ApiError(0, 'Chưa cấu hình VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.');
   await ensureFresh();
   const res = await fetch(`${WORKER_URL}${path}`, {
     method: init.method || (init.body ? 'POST' : 'GET'),
