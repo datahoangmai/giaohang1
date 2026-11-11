@@ -1,9 +1,22 @@
 {
-  // Web app (file tĩnh sau khi build). "name" phải TRÙNG tên dự án Workers trên Cloudflare.
+  // MỘT Worker duy nhất: vừa phục vụ web (thư mục dist) vừa chạy API (/api/*) và cron.
+  // "name" phải TRÙNG tên dự án Workers trên Cloudflare.
   "name": "giaohang",
+  "main": "worker-api/src/index.ts",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "ODOO_URL": "https://SUA-DIA-CHI-ODOO-CUA-BAN",
+    "ODOO_DB": "SUA-TEN-DATABASE-ODOO",
+    "SUPABASE_URL": "https://ggftiysmnxoujclvmyfb.supabase.co",
+    "GEOCODE_PROVIDER": "none",
+    "EMAIL_DOMAIN": "hachihi.local",
+    "WINDOW_TOLERANCE_MIN": "60"
   }
 }
